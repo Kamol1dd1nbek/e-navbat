@@ -1,0 +1,19 @@
+{
+  "name": "e-navbat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "dev": "nodemon app"
+  },
+  "keywords": [],
+  "author": "Xudoyberdiyev kamoliddin Zafar o'g'li",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "dependencies": {
+    "config": "^3.3.9",
+    "express": "^4.18.2"
+  }
+}
