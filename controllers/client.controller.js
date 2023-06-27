@@ -23,7 +23,8 @@ const addClient = async (req, res) => {
         client_first_name,
         client_phone_number,
         client_info,
-        client_photo
+        client_photo,
+        
     ];
 
     const newClient = await pool.query(query, values);
@@ -31,6 +32,7 @@ const addClient = async (req, res) => {
     res.status(200).json(newClient.rows);
   } catch (error) {
     res.status(500).json("Serverda xatolik");
+    console.log(error);
   }
 };
 

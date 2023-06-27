@@ -6,7 +6,7 @@ const app  = express();
 
 app.use(express.json());
 
-app.use(mainRoute);
+app.use("/api", mainRoute);
 
 async function start() {
     try {
