@@ -1,8 +1,21 @@
-const { addClient } = require("../controllers/client.controller");
+const { addClient, getAllClients, getClientById, updateClient, deleteClient } = require("../controllers/client.controller");
 
-const { Router } = require("express");
-const router = Router();
+const express = require("express");
+const router = express.Router();
 
-router.post("/client/add", addClient);
+express.Router.prefix = function (path, subRouter) {
+    const router = express.Router();
+    this.use(path, router);
+    subRouter(router);
+    return router;
+}
+
+router.prefix("/client", (clientRouter) => {
+    clientRouter.get("/", getAllClients);
+    clientRouter.get("/:id", getClientById);
+    clientRouter.post("/add", addClient);
+    clientRouter.put("/:id", updateClient);
+    clientRouter.delete("/:id", deleteClient);
+});
 
 module.exports = router;
