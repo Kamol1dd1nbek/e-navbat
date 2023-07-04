@@ -16,6 +16,10 @@
     "bcrypt": "^5.1.0",
     "config": "^3.3.9",
     "express": "^4.18.2",
-    "pg": "^8.11.1"
+    "jsonwebtoken": "^9.0.0",
+    "node-device-detector": "^2.0.14",
+    "otp-generator": "^4.0.1",
+    "pg": "^8.11.1",
+    "uuid": "^9.0.0"
   }
 }

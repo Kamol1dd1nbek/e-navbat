@@ -1,4 +1,13 @@
 const pool = require("../config/db");
+const DeviceDetector = require('node-device-detector');
+const DeviceHelper = require('node-device-detector/helper');
+
+const detector = new DeviceDetector({
+    clientIndexes: true,
+    deviceIndexes: true,
+    deviceAliasCode: false,
+  });
+
 
 const addClient = async (req, res) => {
   try {
@@ -56,6 +65,11 @@ const getAllClients = async (req, res) => {
 }
 
 const getClientById = async (req, res) => {
+    const userAgent = req.headers["user-agent"];
+    const result = detector.detect(userAgent);
+    console.log('result parse', result);
+
+    console.log(">>>>> ", DeviceHelper.isDesktop(result))
     try {
         const id = req.params.id;
     
