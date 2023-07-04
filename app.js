@@ -2,9 +2,11 @@ const express = require('express');
 const config = require('config');
 const mainRoute = require("./routes");
 const pool = require('./config/db');
+const cookieParser = require('cookie-parser');
 const app  = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api", mainRoute);
 

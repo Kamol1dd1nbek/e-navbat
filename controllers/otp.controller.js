@@ -1,11 +1,13 @@
 const { AddMinutesToDate, dates } = require("../helpers");
 
+const DeviceDetector = require("node-device-detector");
 const { v4 : uuidv4 } = require("uuid");
 const { encode, decode } = require("../services/crypt");
 const pool = require("../config/db");
 const otpGenerator = require("otp-generator");
 const { response } = require("express");
-const jwtService = require("../services/jwtService");
+const myJwt = require("../services/jwtService");
+const bcrypt = require('bcrypt');
 
 const newOTP = async (req, res) => {
     const { phone_number } = req.body;
@@ -75,40 +77,69 @@ const verifyOTP = async (req, res) => {
             if (dates.compare(result.expiration_time, currentdate) == 1) {
                 //check if otp is equal to the otp in the DB
                 if (otp == result.otp) {
-                    let query = "UPDATE otp SET verified = $2 WHERE id = $1";
-                    console.log(result.id);
-                    let values = [result.id, true];
-                    await pool.query(query, values);
+                    
+                    await pool.query("UPDATE otp SET verified = $2 WHERE id = $1", [result.id, true]);
 
                     query = "SELECT * FROM client WHERE client_phone_number = $1";
                     values = [check];
 
                     const clientResult = await pool.query(query, values);
-                    const payload = {
-                        check
-                    }
-                    const {accessToken, refreshToken} = jwtService.generateTokens(payload);
-                    if (clientResult.rows.length == 0) {
-                        const response = {
-                            Status: "Success",
-                            Deatails: "new",
-                            Check: check,
-                            accessToken,
-                            refreshToken
-                        };
+                    let clientId, details;
 
-                        return res.status(200).send(response);
+                    if (clientResult.rows.length == 0) {
+
+                        const newClient = await pool.query("INSERT INTO CLIENT (client_phone_number, otp_id) VALUES ($1, $2) RETURNING id", [check, obj.otp_id]);
+                        clientId = newClient.rows[0].id;
+                        details = "new";
+
                     } else {
-                        const response = {
-                            Status: "Success",
-                            Deatails: "old",
-                            Check: check,
-                            ClientName: clientResult.rows[0]?.client_first_name,
-                            accessToken,
-                            refreshToken
-                        };  
-                        return res.status(200).send(response);
+                        clientId = clientResult.rows[0].id;
+                        details = "old";
+
+                        const query = "UPDATE client SET otp_id = $2 WHERE id = $1;";
+                        const values = [clientId, obj.otp_id];
+                        await pool.query(query, values);
                     }
+
+                    const payload = {
+                        id: clientId,
+                    }
+                    const tokens = myJwt.generateTokens(payload);
+
+                    // save refresh_token to datebase
+                    const detector = new DeviceDetector({
+                        clientIndexes: true,
+                        deviceIndexes: true,
+                        deviceAliasCode: false,
+                      });
+                    
+                    const userAgent = req.headers["user-agent"];
+                    const result = detector.detect(userAgent);
+                    console.log('result parse', result);
+
+                    const hashed_refresh_token = await bcrypt.hash(tokens.refreshToken, 10);
+
+                    const tP = {
+                        tableName: "client",
+                        device: JSON.stringify(result.device),
+                        os: JSON.stringify(result.os),
+                        client: JSON.stringify(result.client),
+                        clientId,
+                        hashed_refresh_token
+                    }
+
+                    query = "INSERT INTO token (tableName, user_id, user_os, user_browser, user_device, hashed_refresh_token) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *";
+                    values = [tP.tableName, tP.clientId, tP.os, tP.client, tP.device, tP.hashed_refresh_token];
+                    const token = await pool.query(query, values);
+
+                    const response = {
+                        Status: "Success",
+                        Deatails: details,
+                        Check: check,
+                        ClientId: clientId,
+                        tokens
+                    };
+                    res.status(200).send(response);
                 } else {
                     const result = {Status: "Failure", Deatails: "OTP Not Matched"};
                     return res.status(400).send(result);
